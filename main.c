@@ -225,6 +225,7 @@ int main(int argc, char ** argv) {
     } else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) {
       if(ev.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
         printf("Skipping %s with %d:%d left...\n", cur->name, (cur->time)/60, (cur->time) % 60);
+        current -= cur->max_time;
         al_set_timer_count(counter, cur->max_time);
       }
       if(ev.keyboard.keycode == ALLEGRO_KEY_SPACE) {
