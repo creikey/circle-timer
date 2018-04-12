@@ -86,7 +86,10 @@ int get_total_time(waypoint * points) {
 }
 
 waypoint * parse_file(const char * filename) {
-  waypoint * to_return = new_waypoint(0, "none");
+  const char * first_name = "none";
+  char * to_set = malloc(sizeof *to_set * strlen(first_name) + 1);
+  strcpy(to_set, first_name);
+  waypoint * to_return = new_waypoint(0, to_set);
   FILE * file = fopen(filename, "r");
   assert(file);
 
@@ -126,6 +129,7 @@ waypoint * parse_file(const char * filename) {
     int err = sscanf(line2, "%d:%d", &minutes, &seconds);
     assert(err == 2);
     append_waypoint(to_return, new_waypoint((minutes*60)+seconds, name));
+    free(line2);
   }
   fclose(file);
   return to_return;
@@ -198,7 +202,6 @@ int main(int argc, char ** argv) {
       if(ev.timer.source == fps_tim)
         redraw = true;
       if(ev.timer.source == counter) {
-        printf("Counter went off!\n");
         current--;
         total_ratio = (float)current/(float)total;
         total_target = total_ratio*ALLEGRO_PI*2;
