@@ -173,7 +173,7 @@ int main(int argc, char ** argv) {
   assert(al_init());
   assert(al_init_font_addon());
   assert(al_init_ttf_addon());
-  assert(al_install_keyboard);
+  assert(al_install_keyboard());
   font = al_load_ttf_font(MAIN_FONT,100,0);
   small_font = al_load_ttf_font(MAIN_FONT, 40,0);
   assert(small_font);
@@ -194,6 +194,7 @@ int main(int argc, char ** argv) {
   al_register_event_source(ev_q, al_get_display_event_source(disp));
   al_register_event_source(ev_q, al_get_timer_event_source(fps_tim));
   al_register_event_source(ev_q, al_get_timer_event_source(counter));
+  al_register_event_source(ev_q, al_get_keyboard_event_source());
   bool redraw;
   while(1) {
     ALLEGRO_EVENT ev;
@@ -223,7 +224,7 @@ int main(int argc, char ** argv) {
     } else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) {
       printf("Key down!\n");
       if(ev.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
-        printf("Skipping...\n");
+        printf("Skipping %s with %d:%d left...\n", cur->name, (cur->time)/60, (cur->time) % 60);
         al_set_timer_count(counter, cur->max_time);
       }
     } else if(ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
