@@ -20,8 +20,8 @@ uninstall:
 	-sudo rm $(exedir)/$(exename)
 
 debug:
-	gcc -c $(OFILES) -g
-	gcc $(OFILES) -g `pkg-config --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5`
+	gcc -c main.c -g
+	gcc $(OFILES) -o $(exename)-debug -g `pkg-config --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5`
 
 main.o: main.c
 	gcc -c main.c
@@ -29,4 +29,5 @@ main.o: main.c
 clean:
 	-rm *.o
 	-rm *.gch
-	-rm a.out
+	-rm $(exename)
+	-rm $(exename)-debug
