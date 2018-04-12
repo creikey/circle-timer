@@ -91,7 +91,6 @@ waypoint * parse_file(const char * filename) {
   assert(file);
 
   const int max_len = 150;
-  int i = 0;
   char * tmp;
   while(1) {
     /*char * name = calloc(max_len, sizeof *name);
@@ -109,18 +108,23 @@ waypoint * parse_file(const char * filename) {
     printf("Test is %s\n", test);
     printf("Val is %d\n", val);
     assert(val == 2);*/
-    char * name = calloc(max_len, sizeof *name);
-    int minutes;
-    int seconds;
-    int err = fscanf(file, "%*s %150[^\n]%d:%d", name, &minutes, &seconds);
-    if( err == -1 ) {
+    char * line1 = calloc(max_len, sizeof *line1);
+    char * line2 = calloc(max_len, sizeof *line2);
+    tmp = fgets(line1, max_len, file);
+    if(tmp == NULL) {
+      printf("Done reading conf file...\n");
       break;
     }
-    printf("Name is %s\n", name);
-    printf("minutes is %d\n", minutes);
-    printf("seconds is %d\n", seconds);
-    printf("Error is: %d\n", err);
-    assert(err == 3);
+    tmp = fgets(line2, max_len, file);
+    if(tmp == NULL) {
+      printf("Trailing conf string after %s\n", line1);
+      break;
+    }
+    char * name = line1;
+    int minutes;
+    int seconds;
+    int err = sscanf(line2, "%d:%d", &minutes, &seconds);
+    assert(err == 2);
     append_waypoint(to_return, new_waypoint((minutes*60)+seconds, name));
   }
   fclose(file);
