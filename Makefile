@@ -5,6 +5,10 @@ OFILES=main.o
 all: $(OFILES)
 	gcc $(OFILES) `pkg-config --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5`
 
+debug:
+	gcc -c $(OFILES) -g
+	gcc $(OFILES) -g `pkg-config --libs allegro-5 allegro_font-5 allegro_ttf-5 allegro_primitives-5`
+
 main.o: main.c
 	gcc -c main.c
 

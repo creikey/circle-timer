@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <malloc.h>
 #include <string.h>
+#include <unistd.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
@@ -23,11 +24,11 @@ typedef struct waypoint {
   float ratio;
   float target;
   float current;
-  const char * name;
+  char * name;
   struct waypoint * next;
 } waypoint;
 
-waypoint * new_waypoint(int in_time, const char * in_name) {
+waypoint * new_waypoint(int in_time, char * in_name) {
   waypoint * to_return = malloc(sizeof *to_return);
   to_return->time = in_time;
   to_return->max_time = in_time;
@@ -49,14 +50,27 @@ void append_waypoint(waypoint * to_append_to, waypoint * to_append) {
   to_append->next = NULL;
 }
 
+void print_waypoints(waypoint * points) {
+  assert(points);
+  waypoint * cur = points;
+  while(cur->next != NULL) {
+    printf("(t: %d)(n: %s) | ", cur->time, cur->name);
+    cur = cur->next;
+  }
+  printf("(t: %d)(n: %s)\n", cur->time, cur->name);
+}
+
 void delete_waypoints(waypoint * to_delete) {
   assert(to_delete != NULL);
   waypoint * cur = to_delete;
   while(cur->next != NULL) {
     waypoint * prev = cur;
     cur = cur->next;
+    free(prev->name);
     free(prev);
   }
+  free(cur->name);
+  free(cur);
 }
 
 int get_total_time(waypoint * points) {
@@ -71,6 +85,47 @@ int get_total_time(waypoint * points) {
   return total;
 }
 
+waypoint * parse_file(const char * filename) {
+  waypoint * to_return = new_waypoint(0, "none");
+  FILE * file = fopen(filename, "r");
+  assert(file);
+
+  const int max_len = 150;
+  int i = 0;
+  char * tmp;
+  while(1) {
+    /*char * name = calloc(max_len, sizeof *name);
+    tmp = fgets(name, max_len, file);
+    if(tmp == NULL)
+      break;
+    char * tmptime = calloc(max_len, sizeof *tmptime);
+    tmp = fgets(tmptime, max_len, file);
+    if(tmp == NULL)
+      break;
+    int minutes;
+    int seconds;
+    char test[5];
+    int val = fscanf(file, "%s\n", test);
+    printf("Test is %s\n", test);
+    printf("Val is %d\n", val);
+    assert(val == 2);*/
+    char * name = calloc(max_len, sizeof *name);
+    int minutes;
+    int seconds;
+    int err = fscanf(file, "%*s %150[^\n]%d:%d", name, &minutes, &seconds);
+    if( err == -1 ) {
+      break;
+    }
+    printf("Name is %s\n", name);
+    printf("minutes is %d\n", minutes);
+    printf("seconds is %d\n", seconds);
+    printf("Error is: %d\n", err);
+    assert(err == 3);
+    append_waypoint(to_return, new_waypoint((minutes*60)+seconds, name));
+  }
+  fclose(file);
+  return to_return;
+}
 
 char * waypoint_str(waypoint * to_str) {
   const size_t max_size = 8;
@@ -82,7 +137,17 @@ char * waypoint_str(waypoint * to_str) {
   return to_return;
 }  
 
+
 int main(int argc, char ** argv) {
+  waypoint * points;
+  if(argc <= 1) {
+    printf("Please input a configuration filename\n");
+    return -1;
+  } else {
+    points = parse_file(argv[1]);
+    assert(points);
+  }
+  print_waypoints(points);
   ALLEGRO_DISPLAY * disp = NULL;
   int width = INIT_X;
   int height = INIT_Y;
@@ -91,8 +156,6 @@ int main(int argc, char ** argv) {
   ALLEGRO_TIMER * counter = NULL;
   ALLEGRO_FONT * font = NULL;
   ALLEGRO_FONT * small_font = NULL;
-  waypoint * points = new_waypoint(4, "first");
-  append_waypoint(points, new_waypoint(3, "second"));
   waypoint * cur = points;
   int total = get_total_time(points);
   int current = total;
@@ -102,6 +165,7 @@ int main(int argc, char ** argv) {
   assert(al_init());
   assert(al_init_font_addon());
   assert(al_init_ttf_addon());
+  assert(al_install_keyboard);
   font = al_load_ttf_font(MAIN_FONT,100,0);
   small_font = al_load_ttf_font(MAIN_FONT, 40,0);
   assert(small_font);
@@ -149,6 +213,12 @@ int main(int argc, char ** argv) {
         }
         cur->target = cur->ratio*ALLEGRO_PI*2;
       }
+    } else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) {
+      printf("Key down!\n");
+      if(ev.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
+        printf("Skipping...\n");
+        al_set_timer_count(counter, cur->max_time);
+      }
     } else if(ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
       al_acknowledge_resize(disp);
       width=ev.display.width;
@@ -162,7 +232,7 @@ int main(int argc, char ** argv) {
       cur->current += (cur->target-cur->current)/ANIM_SPEED;
       total_current += (total_target-total_current)/ANIM_SPEED;
       al_draw_arc(width/2, height/2, al_get_font_line_height(font)*1.5, 0, cur->current, al_map_rgb(240, 190, 190), 80);
-      al_draw_arc(width/2, height/2, al_get_font_line_height(font)*2, 0, total_current, al_map_rgb(220, 190, 190), 50);
+      al_draw_arc(width/2, height/2, al_get_font_line_height(font)*2, 0, total_current, al_map_rgb(190, 220, 190), 50);
       al_draw_text(font, MAIN_FONT_CL, width/2, (height/2)-al_get_font_line_height(font)/2, ALLEGRO_ALIGN_CENTRE, waypoint_str(cur));
       al_draw_text(small_font, SMALL_FONT_CL, width/2, (height/2)-(al_get_font_line_height(small_font)/2)+300, ALLEGRO_ALIGN_CENTRE, cur->name);
       al_flip_display();
