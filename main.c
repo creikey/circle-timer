@@ -17,6 +17,7 @@
 #define MAIN_FONT "/opt/circle-timer/ttf/Hack-Bold.ttf"
 #define MAIN_FONT_CL al_map_rgb(0,0,0)
 #define SMALL_FONT_CL al_map_rgb(20,20,20)
+#define DEFAULT_CONF_FILE "config.txt"
 
 typedef struct waypoint {
   int time; // seconds
@@ -149,8 +150,16 @@ char * waypoint_str(waypoint * to_str) {
 int main(int argc, char ** argv) {
   waypoint * points;
   if(argc <= 1) {
-    printf("Please input a configuration filename\n");
-    return -1;
+    printf("Automatically searching for file %s....\n", DEFAULT_CONF_FILE);
+    FILE * fp;
+    if((fp = fopen(DEFAULT_CONF_FILE, "r"))) {
+      printf("Found!\n");
+      points = parse_file(DEFAULT_CONF_FILE);
+      assert(points);
+    } else {
+      printf("Failed to find configuration file!\n");
+      return -1;
+    }
   } else {
     points = parse_file(argv[1]);
     assert(points);
