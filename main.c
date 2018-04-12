@@ -159,6 +159,7 @@ int main(int argc, char ** argv) {
   ALLEGRO_DISPLAY * disp = NULL;
   int width = INIT_X;
   int height = INIT_Y;
+  bool paused = false;
   ALLEGRO_EVENT_QUEUE * ev_q = NULL;
   ALLEGRO_TIMER * fps_tim = NULL;
   ALLEGRO_TIMER * counter = NULL;
@@ -222,10 +223,17 @@ int main(int argc, char ** argv) {
         cur->target = cur->ratio*ALLEGRO_PI*2;
       }
     } else if(ev.type == ALLEGRO_EVENT_KEY_DOWN) {
-      printf("Key down!\n");
       if(ev.keyboard.keycode == ALLEGRO_KEY_RIGHT) {
         printf("Skipping %s with %d:%d left...\n", cur->name, (cur->time)/60, (cur->time) % 60);
         al_set_timer_count(counter, cur->max_time);
+      }
+      if(ev.keyboard.keycode == ALLEGRO_KEY_SPACE) {
+        paused = !paused;
+        if(paused) {
+          al_stop_timer(counter);
+        } else {
+          al_start_timer(counter);
+        }
       }
     } else if(ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
       al_acknowledge_resize(disp);
@@ -243,6 +251,8 @@ int main(int argc, char ** argv) {
       al_draw_arc(width/2, height/2, al_get_font_line_height(font)*2, 0, total_current, al_map_rgb(190, 220, 190), 50);
       al_draw_text(font, MAIN_FONT_CL, width/2, (height/2)-al_get_font_line_height(font)/2, ALLEGRO_ALIGN_CENTRE, waypoint_str(cur));
       al_draw_text(small_font, SMALL_FONT_CL, width/2, (height/2)-(al_get_font_line_height(small_font)/2)+300, ALLEGRO_ALIGN_CENTRE, cur->name);
+      if(paused)
+        al_draw_text(small_font, SMALL_FONT_CL, width/2, (height/2)-(al_get_font_line_height(small_font)/2)-300, ALLEGRO_ALIGN_CENTRE, "paused");
       al_flip_display();
     }
   }
