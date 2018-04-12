@@ -14,7 +14,7 @@
 #define ANIM_SPEED 4
 #define FPS 60
 #define DEFAULT_CLEAR al_map_rgb(240, 240, 240)
-#define MAIN_FONT "ttf/Hack-Bold.ttf"
+#define MAIN_FONT "/opt/circle-timer/ttf/Hack-Bold.ttf"
 #define MAIN_FONT_CL al_map_rgb(0,0,0)
 #define SMALL_FONT_CL al_map_rgb(20,20,20)
 
