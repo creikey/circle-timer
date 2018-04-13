@@ -17,6 +17,7 @@
 #define MAIN_FONT "/opt/circle-timer/ttf/Hack-Bold.ttf"
 #define MAIN_FONT_CL al_map_rgb(0,0,0)
 #define SMALL_FONT_CL al_map_rgb(20,20,20)
+#define SMALL_FONT_FADE_CL al_map_rgb(100, 100, 100)
 #define DEFAULT_CONF_FILE "config.txt"
 
 typedef struct waypoint {
@@ -59,6 +60,13 @@ void print_waypoints(waypoint * points) {
     cur = cur->next;
   }
   printf("(t: %d)(n: %s)\n", cur->time, cur->name);
+}
+
+char * secs_to_long(int secs) {
+  const char max_size = 30;
+  char * to_return = malloc(sizeof *to_return * max_size);
+  sprintf(to_return, "%d:%d:%d", secs/3600, (secs % 3600)/60, (secs % 60));
+  return to_return;
 }
 
 void delete_waypoints(waypoint * to_delete) {
@@ -206,6 +214,9 @@ int main(int argc, char ** argv) {
   al_register_event_source(ev_q, al_get_timer_event_source(counter));
   al_register_event_source(ev_q, al_get_keyboard_event_source());
   bool redraw;
+  char * current_str = secs_to_long(current);
+  bool up_down_keys[2] = {false, false};
+  int warp_delta = 1;
   while(1) {
     ALLEGRO_EVENT ev;
     al_wait_for_event(ev_q, &ev);
@@ -213,7 +224,9 @@ int main(int argc, char ** argv) {
       if(ev.timer.source == fps_tim)
         redraw = true;
       if(ev.timer.source == counter) {
+        free(current_str);
         current--;
+        current_str = secs_to_long(current);
         total_ratio = (float)current/(float)total;
         total_target = total_ratio*ALLEGRO_PI*2;
         if(cur->time <= 0) {
@@ -245,6 +258,20 @@ int main(int argc, char ** argv) {
           al_start_timer(counter);
         }
       }
+      if(ev.keyboard.keycode == ALLEGRO_KEY_UP) {
+        up_down_keys[0] = true;
+      }
+      if(ev.keyboard.keycode == ALLEGRO_KEY_DOWN) {
+        up_down_keys[1] = true;
+      }
+    } else if(ev.type == ALLEGRO_EVENT_KEY_UP) {
+      if(ev.keyboard.keycode == ALLEGRO_KEY_UP) {
+        up_down_keys[0] = false;
+      }
+      if(ev.keyboard.keycode == ALLEGRO_KEY_DOWN) {
+        up_down_keys[1] = false;
+      }
+
     } else if(ev.type == ALLEGRO_EVENT_DISPLAY_RESIZE) {
       al_acknowledge_resize(disp);
       width=ev.display.width;
@@ -254,6 +281,17 @@ int main(int argc, char ** argv) {
     }
     if(redraw && al_is_event_queue_empty(ev_q)) {
       redraw = false;
+      if(up_down_keys[0] || up_down_keys[1]) {
+        int modifier;
+        if(up_down_keys[0]) {
+          modifier=1;
+        } else {
+          modifier=-1;
+        }
+        current -= warp_delta*modifier;
+        al_add_timer_count(counter, warp_delta*modifier);
+        cur->time -= warp_delta*modifier;
+      }
       al_clear_to_color(DEFAULT_CLEAR);
       cur->current += (cur->target-cur->current)/ANIM_SPEED;
       total_current += (total_target-total_current)/ANIM_SPEED;
@@ -261,12 +299,14 @@ int main(int argc, char ** argv) {
       al_draw_arc(width/2, height/2, al_get_font_line_height(font)*2, 0, total_current, al_map_rgb(190, 220, 190), 50);
       al_draw_text(font, MAIN_FONT_CL, width/2, (height/2)-al_get_font_line_height(font)/2, ALLEGRO_ALIGN_CENTRE, waypoint_str(cur));
       al_draw_text(small_font, SMALL_FONT_CL, width/2, (height/2)-(al_get_font_line_height(small_font)/2)+300, ALLEGRO_ALIGN_CENTRE, cur->name);
+      al_draw_text(small_font, SMALL_FONT_FADE_CL, (width/2)+200, (height/2)-(al_get_font_line_height(small_font)/2)+250, ALLEGRO_ALIGN_CENTRE, current_str);
       if(paused)
         al_draw_text(small_font, SMALL_FONT_CL, width/2, (height/2)-(al_get_font_line_height(small_font)/2)-300, ALLEGRO_ALIGN_CENTRE, "paused");
       al_flip_display();
     }
   }
 
+  free(current_str);
   al_destroy_timer(fps_tim);
   al_destroy_display(disp);
   al_destroy_event_queue(ev_q);
